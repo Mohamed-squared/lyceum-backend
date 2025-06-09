@@ -1,0 +1,21 @@
+# .gitignore
+
+# Local environment variables
+.env
+
+# Go build files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# IDE/Editor folders
+.vscode/
+.idea/

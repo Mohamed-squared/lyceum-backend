@@ -1,0 +1,25 @@
+Folder PATH listing
+Volume serial number is FA07-D261
+C:.
+¦   .gitignore
+¦   Dockerfile
+¦   go.mod
+¦   tree.txt
+¦   
++---cmd
+¦   +---server
+¦           main.go
+¦           
++---internal
+    +---api
+    ¦       handlers.go
+    ¦       
+    +---auth
+    ¦       middleware.go
+    ¦       
+    +---config
+    ¦       config.go
+    ¦       
+    +---store
+            database.go
+            
