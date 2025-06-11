@@ -30,8 +30,7 @@ func main() {
 	// Connect to database
 	dbpool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v
-", err)
+		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	defer dbpool.Close()
 
@@ -68,7 +67,7 @@ func main() {
 	// API Routes
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.Use(auth.JWTMiddleware(cfg.SupabaseJWTSecret))
+			r.Use(auth.JWTMiddleware(cfg.SupabaseJWTSecret, cfg.SupabaseServiceKey))
 			r.Post("/onboarding", apiHandler.OnboardingHandler)
 		})
 	})
