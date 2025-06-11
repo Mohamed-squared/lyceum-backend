@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	DatabaseURL     string
-	SupabaseJWTSecret string
-	ServerPort      string
+	DatabaseURL       string
+	SupabaseJWTSecret   string
+	ServerPort        string
+	SupabaseServiceKey string
 }
 
 func Load() (*Config, error) {
@@ -19,8 +20,9 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		DatabaseURL:     os.Getenv("DATABASE_URL"),
-		SupabaseJWTSecret: os.Getenv("SUPABASE_JWT_SECRET"),
-		ServerPort:      os.Getenv("SERVER_PORT"),
+		DatabaseURL:       os.Getenv("DATABASE_URL"),
+		SupabaseJWTSecret:   os.Getenv("SUPABASE_JWT_SECRET"),
+		ServerPort:        os.Getenv("SERVER_PORT"),
+		SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
 	}, nil
 }

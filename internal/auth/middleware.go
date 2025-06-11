@@ -13,7 +13,7 @@ type contextKey string
 
 const UserIDKey contextKey = "userID"
 
-func JWTMiddleware(jwtSecret string) func(http.Handler) http.Handler {
+func JWTMiddleware(jwtSecret string, serviceKey string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -23,16 +23,37 @@ func JWTMiddleware(jwtSecret string) func(http.Handler) http.Handler {
 			}
 
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			if tokenString == authHeader {
+			if tokenString == authHeader { // No "Bearer " prefix
 				http.Error(w, "Bearer token required", http.StatusUnauthorized)
 				return
 			}
 
+			// Check if the token is the service key
+			if serviceKey != "" && tokenString == serviceKey {
+				// It's the service key.
+				// Optionally, set a specific userID or a flag in the context for service key access
+				// For now, we'll use a generic service_user_id.
+				// Ensure this userID is handled appropriately by downstream handlers.
+				ctx := context.WithValue(r.Context(), UserIDKey, "service_account_user_id") // Or some other indicator
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			// Regular JWT processing
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				// Validate the alg is what you expect:
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, http.ErrAbortHandler // Or a more specific error
+				}
 				return []byte(jwtSecret), nil
 			})
 
-			if err != nil || !token.Valid {
+			if err != nil {
+				http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			if !token.Valid {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
 				return
 			}
