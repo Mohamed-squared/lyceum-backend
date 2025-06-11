@@ -3,8 +3,8 @@ package api
 
 import (
 	"encoding/json"
-	"lyceum/internal/auth"
-	"lyceum/internal/store"
+	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
+	"github.com/Mohamed-squared/lyceum-backend/internal/store"
 	"net/http"
 )
 
