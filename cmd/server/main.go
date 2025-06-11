@@ -10,6 +10,7 @@ import (
 	"lyceum/internal/config"
 	"lyceum/internal/store"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -40,6 +41,16 @@ func main() {
 	dbStore := store.New(dbpool)
 	apiHandler := api.New(dbStore)
 
+	// Determine port and listen address
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.ServerPort
+	}
+	if port == "" {
+		port = "8080"
+	}
+	listenAddr := fmt.Sprintf("0.0.0.0:%s", port)
+
 	// Setup router
 	r := chi.NewRouter()
 
@@ -63,8 +74,8 @@ func main() {
 	})
 
 	// Start server
-	log.Printf("Starting server on port %s", cfg.ServerPort)
-	if err := http.ListenAndServe(":"+cfg.ServerPort, r); err != nil {
+	log.Printf("Starting server on %s", listenAddr)
+	if err := http.ListenAndServe(listenAddr, r); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
