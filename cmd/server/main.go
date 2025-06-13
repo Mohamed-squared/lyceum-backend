@@ -31,8 +31,7 @@ func main() {
 	// Connect to database
 	dbpool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v
-", err)
+		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	defer dbpool.Close()
 
