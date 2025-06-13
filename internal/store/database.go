@@ -16,26 +16,8 @@ func New(db *pgxpool.Pool) *Store {
 	return &Store{db: db}
 }
 
-// OnboardingData mirrors the JSON payload from the frontend
-type OnboardingData struct {
-	DisplayName                   string   `json:"displayName"`
-	UserRole                      string   `json:"userRole"`
-	PreferredWebsiteLanguage      string   `json:"preferred_website_language"`
-	PreferredCourseExplanationLanguage string `json:"preferred_course_explanation_language"`
-	PreferredCourseMaterialLanguage  string `json:"preferred_course_material_language"`
-	Major                         string   `json:"major"`
-	MajorLevel                    string   `json:"major_level"`
-	StudiedSubjects               []string `json:"studied_subjects"`
-	InterestedMajors              []string `json:"interested_majors"`
-	Hobbies                       []string `json:"hobbies"`
-	SubscribedToNewsletter        bool     `json:"subscribed_to_newsletter"`
-	ReceiveQuotes                 bool     `json:"receive_quotes"`
-	Bio                           string   `json:"bio"`
-	GithubURL                     string   `json:"github_url"`
-}
-
 // UpdateUserProfile updates a user's profile after onboarding
-func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data OnboardingData) error {
+func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types.OnboardingData) error {
 	query := `
 		UPDATE public.profiles
 		SET
