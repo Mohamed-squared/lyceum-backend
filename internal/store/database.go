@@ -3,7 +3,9 @@ package store
 
 import (
 	"context"
+	"database/sql" // Add this
 	"fmt"
+	"log" // Add this
 	"github.com/Mohamed-squared/lyceum-backend/internal/types" // Assuming lyceum is the module name defined in go.mod
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -41,52 +43,80 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types
 }
 
 func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.DashboardResponse, error) {
-	var displayName, major, majorLevel string
-	var credits int // Assuming credits will be a number, default to 0 if not scanned
+	// 1. Use nullable types for all variables that can be NULL in the DB
+	var displayName, major, majorLevel sql.NullString
+	var credits sql.NullInt32
 
-	// Query to fetch profile data including credits
+	// 2. The query remains the same
 	query := `SELECT display_name, major, major_level, credits FROM profiles WHERE id = $1`
+
+	// 3. Scan into the nullable types
 	err := s.db.QueryRow(ctx, query, userID).Scan(&displayName, &major, &majorLevel, &credits)
 
 	if err != nil {
+		// This detailed log will now appear in your Railway Deploy Logs
+		log.Printf("DATABASE ERROR for user '%s': %v", userID, err)
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("no profile found for user ID: %s", userID)
 		}
-		return nil, fmt.Errorf("database query failed: %w", err)
+		return nil, fmt.Errorf("database query failed") // Keep generic error for client
 	}
 
-	// Construct the response with a mix of dynamic and static data
+	// 4. Safely extract values from nullable types, providing defaults
+	finalDisplayName := "Scholar"
+	if displayName.Valid {
+		finalDisplayName = displayName.String
+	}
+
+	finalMajor := "Undeclared"
+	if major.Valid {
+		finalMajor = major.String
+	}
+	// majorLevel is read but not used in the example response construction,
+	// but if it were, it would be:
+	// finalMajorLevel := "" // Or some default
+	// if majorLevel.Valid {
+	//     finalMajorLevel = majorLevel.String
+	// }
+
+	finalCredits := 0
+	if credits.Valid {
+		finalCredits = int(credits.Int32)
+	}
+
+	// 5. Construct the final response with safe data
 	responseData := &types.DashboardResponse{
-		WelcomeMessage: fmt.Sprintf("Welcome, %s!", displayName),
-		Credits:        fmt.Sprintf("Scholar's Credits: %d", credits),
+		WelcomeMessage: fmt.Sprintf("Welcome, %s!", finalDisplayName),
+		Credits:        fmt.Sprintf("Scholar's Credits: %d", finalCredits),
 		TestGen: types.TestGenCardData{
 			Title:        "TestGen Snapshot",
-			Subject:      major, // Use the real major from the DB
-			Chapters:     "0/15 Chapters Mastered", // Static for now
-			LastExam:     "Last Exam: N/A", // Static for now
-			PendingExams: "0 Pending PDF Exams", // Static for now
+			Subject:      finalMajor, // Use the processed major
+			Chapters:     "0/15 Chapters Mastered",
+			LastExam:     "Last Exam: N/A",
+			PendingExams: "0 Pending PDF Exams",
 			ButtonText:   "Go to TestGen Dashboard",
 		},
-		Courses: types.CoursesCardData{ // Static data from original file
+		// IMPORTANT: Fill these from the existing GetDashboardData function in the file
+		Courses: types.CoursesCardData{
 			Title:            "Courses Snapshot",
 			EnrollmentStatus: "3 Courses Enrolled",
 			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics",
 			ButtonText:       "Go to My Courses",
 		},
-		Quote: types.QuoteCardData{ // Static data from original file
+		Quote: types.QuoteCardData{
 			Title:      "Quote of the Day",
 			Quote:      "The only true wisdom is in knowing you know nothing.",
 			Author:     "– Socrates",
 			ButtonText: "Refresh",
 		},
-		News: types.NewsCardData{ // Static data from original file
+		News: types.NewsCardData{
 			Title: "Lyceum News",
 			Items: []types.NewsItem{
 				{Text: "New Course Released: Advanced Calculus", Time: "2 hours ago"},
 				{Text: "Community Event: Study Group this Friday", Time: "1 day ago"},
 			},
 		},
-		QuickLinks: types.QuickLinksCardData{ // Static data from original file
+		QuickLinks: types.QuickLinksCardData{
 			Title: "Quick Links",
 			Links: []types.QuickLinkItem{
 				{Text: "Generate Test", Icon: "/assets/icons/icon-test.svg"},

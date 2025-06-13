@@ -3,10 +3,11 @@ package api
 
 import (
 	"encoding/json"
+	"log" // Add this if not present
+	"net/http"
 	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
 	"github.com/Mohamed-squared/lyceum-backend/internal/store"
 	"github.com/Mohamed-squared/lyceum-backend/internal/types"
-	"net/http"
 )
 
 type API struct {
@@ -54,8 +55,7 @@ func (a *API) HandleGetDashboard(w http.ResponseWriter, r *http.Request) {
 
 	dashboardData, err := a.store.GetDashboardData(r.Context(), userID)
 	if err != nil {
-		// Optional: Log the internal error for debugging
-		// log.Printf("Error getting dashboard data for user %s: %v", userID, err)
+		log.Printf("HANDLER ERROR: Failed to get dashboard data for user %s: %v", userID, err) // Add/update this log
 		http.Error(w, "Failed to retrieve dashboard data", http.StatusInternalServerError)
 		return
 	}
