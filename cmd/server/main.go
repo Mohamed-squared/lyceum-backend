@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net" // Add this
+	"net" // Keep this
 	"net/http"
 	"os"
-	"time" // Add this
+	// "time" // This line should be removed
 
 	"github.com/Mohamed-squared/lyceum-backend/internal/api"
 	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
@@ -37,19 +37,11 @@ func main() {
 	}
 
 	// Parse the config from the URL
-	dbConfig, err := pgxpool.ParseConfig(dbURL) // Renamed to dbConfig to avoid conflict with cfg from config.Load()
+	dbConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
 		log.Fatalf("Unable to parse DATABASE_URL: %v\n", err)
 	}
 
-	// Create a custom dialer that prefers IPv4
-	dbConfig.ConnConfig.Dialer = &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 5 * time.Minute,
-		Resolver: &net.Resolver{
-			PreferGo: true,
-		},
-	}
 	// This is the key change to force IPv4
 	dbConfig.ConnConfig.Config.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
 		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
