@@ -5,16 +5,19 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net" // Keep this
+	"net"
 	"net/http"
+	"net/url" // Add this
 	"os"
-	// "time" // This line should be removed
+	"strings" // Add this
 
+	// Internal packages
 	"github.com/Mohamed-squared/lyceum-backend/internal/api"
 	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
 	"github.com/Mohamed-squared/lyceum-backend/internal/config"
 	"github.com/Mohamed-squared/lyceum-backend/internal/store"
 
+	// External packages
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -42,10 +45,40 @@ func main() {
 		log.Fatalf("Unable to parse DATABASE_URL: %v\n", err)
 	}
 
-	// This is the key change to force IPv4
-	dbConfig.ConnConfig.Config.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
+	// --- START of a NEW, MORE ROBUST FIX ---
+
+	// Manually resolve the hostname to an IPv4 address
+	originalHost := dbConfig.ConnConfig.Host // Store original host for logging
+
+	// Check if the original host is already an IP address
+	if net.ParseIP(originalHost) == nil { // It's a hostname, needs resolution
+		ips, err := net.LookupIP(originalHost) // Use originalHost for lookup
+		if err != nil {
+			log.Fatalf("Could not resolve database host '%s': %v", originalHost, err)
+		}
+
+		var ipv4Address string
+		for _, ip := range ips {
+			if ip.To4() != nil {
+				ipv4Address = ip.String()
+				break
+			}
+		}
+
+		if ipv4Address == "" {
+			log.Fatalf("No IPv4 address found for database host '%s'", originalHost)
+		}
+
+		log.Printf("Resolved database host %s to IPv4 address %s", originalHost, ipv4Address)
+
+		// Replace the original hostname with the resolved IPv4 address
+		dbConfig.ConnConfig.Host = ipv4Address
+	} else {
+		log.Printf("Database host '%s' is already an IP address, no resolution needed.", originalHost)
 	}
+
+
+	// --- END of NEW FIX ---
 
 	// Create a new database connection pool using the modified config
 	dbpool, err := pgxpool.NewWithConfig(ctx, dbConfig) // Use existing ctx
