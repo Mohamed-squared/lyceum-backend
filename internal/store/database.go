@@ -1,10 +1,9 @@
-// Path: internal/store/database.go
 package store
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/Mohamed-squared/lyceum-backend/internal/types"
 	"github.com/jackc/pgx/v5"
@@ -21,171 +20,83 @@ func New(db *pgxpool.Pool) *Store {
 	return &Store{db: db}
 }
 
-// User represents a user in the database
-type User struct {
-	ID          string
-	Email       string
-	DisplayName string
-	// Add other fields as necessary
-}
-
-// SaveUser saves a user to the database
-func (s *Store) SaveUser(ctx context.Context, user *User) error {
+// UpdateUserProfile updates a user's profile after onboarding
+func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types.OnboardingData) error {
 	query := `
-		INSERT INTO users (id, email, display_name)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (id) DO UPDATE SET
-			email = EXCLUDED.email,
-			display_name = EXCLUDED.display_name;
+		UPDATE public.profiles
+		SET
+			display_name = $2, user_role = $3, preferred_website_language = $4,
+			preferred_course_explanation_language = $5, preferred_course_material_language = $6,
+			major = $7, major_level = $8, studied_subjects = $9, interested_majors = $10,
+			hobbies = $11, subscribed_to_newsletter = $12, receive_quotes = $13, bio = $14,
+			github_url = $15, has_completed_onboarding = TRUE, updated_at = $16
+		WHERE id = $1;
 	`
-	_, err := s.db.Exec(ctx, query, user.ID, user.Email, user.DisplayName)
-	if err != nil {
-		return fmt.Errorf("failed to save user: %w", err)
-	}
-	return nil
-}
-
-// OnboardingData represents the data collected during onboarding
-type OnboardingData struct {
-	UserID       string `json:"user_id"`
-	DisplayName  string `json:"display_name"`
-	Major        string `json:"major"`
-	MajorLevel   string `json:"major_level"`
-	Pace         string `json:"pace"`
-	LearningMode string `json:"learning_mode"`
-}
-
-// SaveOnboardingData saves onboarding data to the database
-func (s *Store) SaveOnboardingData(ctx context.Context, data *OnboardingData) error {
-	// Start a transaction
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			// Rollback if any error occurs
-			if rbErr := tx.Rollback(ctx); rbErr != nil {
-				log.Printf("failed to rollback transaction: %v (original error: %v)", rbErr, err)
-			}
-		} else {
-			// Commit if everything is fine
-			if cErr := tx.Commit(ctx); cErr != nil {
-				log.Printf("failed to commit transaction: %v", cErr)
-				err = cErr // Propagate commit error
-			}
-		}
-	}()
-
-	// Upsert into profiles table
-	profileQuery := `
-        INSERT INTO profiles (id, display_name, major, major_level)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (id) DO UPDATE SET
-            display_name = EXCLUDED.display_name,
-            major = EXCLUDED.major,
-            major_level = EXCLUDED.major_level;
-    `
-	_, err = tx.Exec(ctx, profileQuery, data.UserID, data.DisplayName, data.Major, data.MajorLevel)
-	if err != nil {
-		return fmt.Errorf("failed to save profile data: %w", err)
-	}
-
-	// Upsert into learning_preferences table
-	preferencesQuery := `
-        INSERT INTO learning_preferences (user_id, pace, learning_mode)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (user_id) DO UPDATE SET
-            pace = EXCLUDED.pace,
-            learning_mode = EXCLUDED.learning_mode;
-    `
-	_, err = tx.Exec(ctx, preferencesQuery, data.UserID, data.Pace, data.LearningMode)
-	if err != nil {
-		return fmt.Errorf("failed to save learning preferences: %w", err)
-	}
-
-	return nil // Error will be handled by defer
+	_, err := s.db.Exec(ctx, query,
+		userID, data.DisplayName, data.UserRole, data.PreferredWebsiteLanguage,
+		data.PreferredCourseExplanationLanguage, data.PreferredCourseMaterialLanguage,
+		data.Major, data.MajorLevel, data.StudiedSubjects, data.InterestedMajors,
+		data.Hobbies, data.SubscribedToNewsletter, data.ReceiveQuotes, data.Bio,
+		data.GithubURL, time.Now(),
+	)
+	return err
 }
 
 // GetDashboardData retrieves data needed for the dashboard
 func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.DashboardResponse, error) {
-	// Use pointers for nullable columns
-	var displayName, major, majorLevel *string // Changed to pointers
-	var credits int = 0                       // Default credits, assuming this column is NOT NULL or has a DB default
+	var displayName, major, majorLevel *string
+	var credits int = 0
 
-	// Query to select profile information. Assuming 'major_level' is a column in 'profiles'.
-	// If 'credits' comes from the database and can be NULL, it should also be a pointer type (e.g., *int).
 	query := `SELECT display_name, major, major_level FROM profiles WHERE id = $1`
 	err := s.db.QueryRow(ctx, query, userID).Scan(&displayName, &major, &majorLevel)
 
-	// Handle errors from QueryRow.Scan. pgx.ErrNoRows means no profile was found.
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			// No profile found, proceed with default values for nullable fields.
-			// This is a valid scenario, not necessarily an error for dashboard display.
-			log.Printf("No profile found for user ID %s. Using default dashboard values.", userID)
-		} else {
-			// Some other database error occurred
-			return nil, fmt.Errorf("database query failed for user ID %s: %w", userID, err)
-		}
+	if err != nil && err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("database query failed: %w", err)
 	}
 
-	// --- Safely handle nil pointers after scanning ---
-	var safeDisplayName = "Scholar" // Default if nil or no row
+	var safeDisplayName = "Scholar"
 	if displayName != nil {
 		safeDisplayName = *displayName
 	}
 
-	var safeMajor = "Not specified" // Default if nil or no row
+	var safeMajor = "Not specified"
 	if major != nil {
 		safeMajor = *major
 	}
 
-	// Assuming majorLevel might also be used. If so, handle it safely too.
-	// var safeMajorLevel = "N/A"
-	// if majorLevel != nil {
-	// 	safeMajorLevel = *majorLevel
-	// }
-
-
-	// Construct the response
-	// Note: The example provided in the issue description for DashboardResponse was quite extensive.
-	// This implementation will use the safe values for displayName and major as requested.
-	// The other fields (Courses, Quote, News, QuickLinks, and parts of TestGen)
-	// were static in the example and will be kept that way here for brevity unless they need to be dynamic.
 	responseData := &types.DashboardResponse{
 		WelcomeMessage: fmt.Sprintf("Welcome, %s!", safeDisplayName),
-		Credits:        fmt.Sprintf("Scholar's Credits: %d", credits), // Using the default/fixed credits value
+		Credits:        fmt.Sprintf("Scholar's Credits: %d", credits),
 		TestGen: types.TestGenCardData{
 			Title:        "TestGen Snapshot",
-			Subject:      safeMajor, // Use the safe, non-nil value
-			Chapters:     "0/15 Chapters Mastered", // Static as per example
-			LastExam:     "N/A",                    // Static as per example
-			PendingExams: "0 Pending PDF Exams",    // Static as per example
+			Subject:      safeMajor,
+			Chapters:     "0/15 Chapters Mastered",
+			LastExam:     "N/A",
+			PendingExams: "0 Pending PDF Exams",
 			ButtonText:   "Go to TestGen Dashboard",
 		},
 		Courses: types.CoursesCardData{
 			Title:            "Courses Snapshot",
-			EnrollmentStatus: "3 Courses Enrolled",                            // Static
-			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics", // Static
+			EnrollmentStatus: "3 Courses Enrolled",
+			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics",
 			ButtonText:       "Go to My Courses",
 		},
 		Quote: types.QuoteCardData{
 			Title:      "Quote of the Day",
-			Quote:      "The only true wisdom is in knowing you know nothing.", // Static
-			Author:     "– Socrates",                                         // Static
+			Quote:      "The only true wisdom is in knowing you know nothing.",
+			Author:     "– Socrates",
 			ButtonText: "Refresh",
 		},
 		News: types.NewsCardData{
 			Title: "Lyceum News",
-			Items: []types.NewsItem{ // Static
+			Items: []types.NewsItem{
 				{Text: "New Course Released: Advanced Calculus", Time: "2 hours ago"},
 				{Text: "Community Event: Study Group this Friday", Time: "1 day ago"},
 			},
 		},
 		QuickLinks: types.QuickLinksCardData{
 			Title: "Quick Links",
-			Links: []types.QuickLinkItem{ // Static
+			Links: []types.QuickLinkItem{
 				{Text: "Generate Test", Icon: "/assets/icons/icon-test.svg"},
 				{Text: "Browse Courses", Icon: "/assets/icons/icon-courses.svg"},
 			},
