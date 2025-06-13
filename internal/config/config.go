@@ -2,6 +2,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"github.com/joho/godotenv"
 	"log"
@@ -19,10 +20,16 @@ func Load() (*Config, error) {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	return &Config{
+	cfg := &Config{
 		DatabaseURL:       os.Getenv("DATABASE_URL"),
 		SupabaseJWTSecret:   os.Getenv("SUPABASE_JWT_SECRET"),
 		ServerPort:        os.Getenv("SERVER_PORT"),
 		SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
-	}, nil
+	}
+
+	if cfg.SupabaseJWTSecret == "" {
+		return nil, errors.New("SUPABASE_JWT_SECRET environment variable not set")
+	}
+
+	return cfg, nil
 }

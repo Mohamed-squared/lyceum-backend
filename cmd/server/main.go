@@ -70,7 +70,7 @@ func main() {
 		r.Get("/dashboard", apiHandler.HandleGetDashboard) // Added this line
 
 		r.Group(func(r chi.Router) {
-			r.Use(auth.JWTMiddleware(cfg.SupabaseJWTSecret, cfg.SupabaseServiceKey))
+			r.Use(auth.AuthMiddleware(cfg.SupabaseJWTSecret))
 			r.Post("/onboarding", apiHandler.OnboardingHandler)
 		})
 	})
