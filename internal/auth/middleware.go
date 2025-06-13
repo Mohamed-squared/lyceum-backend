@@ -3,6 +3,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -74,4 +75,14 @@ func JWTMiddleware(jwtSecret string, serviceKey string) func(http.Handler) http.
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// GetUserIDFromContext retrieves the user ID from the request context.
+// It returns the user ID and an error if the ID is not found or invalid.
+func GetUserIDFromContext(ctx context.Context) (string, error) {
+	userID, ok := ctx.Value(UserIDKey).(string)
+	if !ok || userID == "" {
+		return "", errors.New("could not retrieve user ID from context")
+	}
+	return userID, nil
 }
