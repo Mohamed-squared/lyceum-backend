@@ -5,12 +5,15 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"github.com/Mohamed-squared/lyceum-backend/internal/api"
-	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
-	"github.com/Mohamed-squared/lyceum-backend/internal/config" // Keep for JWT, Port etc.
-	"github.com/Mohamed-squared/lyceum-backend/internal/store"
+	"net" // Add this
 	"net/http"
 	"os"
+	"time" // Add this
+
+	"github.com/Mohamed-squared/lyceum-backend/internal/api"
+	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
+	"github.com/Mohamed-squared/lyceum-backend/internal/config"
+	"github.com/Mohamed-squared/lyceum-backend/internal/store"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,7 +22,7 @@ import (
 )
 
 func main() {
-	ctx := context.Background() // Keep or use context.Background() where needed
+	ctx := context.Background()
 
 	// Load config (which might include JWT Secret, ServerPort, etc.)
 	cfg, err := config.Load()
@@ -33,16 +36,35 @@ func main() {
 		log.Fatal("DATABASE_URL environment variable is not set")
 	}
 
-	// Create a new database connection pool
-	dbpool, err := pgxpool.New(ctx, dbURL) // Use ctx (or context.Background())
+	// Parse the config from the URL
+	dbConfig, err := pgxpool.ParseConfig(dbURL) // Renamed to dbConfig to avoid conflict with cfg from config.Load()
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err) // Added \n for clarity
+		log.Fatalf("Unable to parse DATABASE_URL: %v\n", err)
+	}
+
+	// Create a custom dialer that prefers IPv4
+	dbConfig.ConnConfig.Dialer = &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 5 * time.Minute,
+		Resolver: &net.Resolver{
+			PreferGo: true,
+		},
+	}
+	// This is the key change to force IPv4
+	dbConfig.ConnConfig.Config.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
+	}
+
+	// Create a new database connection pool using the modified config
+	dbpool, err := pgxpool.NewWithConfig(ctx, dbConfig) // Use existing ctx
+	if err != nil {
+		log.Fatalf("Unable to create connection pool with custom config: %v\n", err)
 	}
 	defer dbpool.Close()
 
 	// Ping the database to verify connection
-	if err := dbpool.Ping(ctx); err != nil { // Use ctx (or context.Background())
-		log.Fatalf("Unable to connect to database: %v\n", err) // Added \n for clarity
+	if err := dbpool.Ping(ctx); err != nil { // Use existing ctx
+		log.Fatalf("Unable to connect to database: %v\n", err)
 	}
 	log.Println("Successfully connected to the database.")
 
