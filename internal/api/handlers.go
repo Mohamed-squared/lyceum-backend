@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/Mohamed-squared/lyceum-backend/internal/auth"
 	"github.com/Mohamed-squared/lyceum-backend/internal/store"
+	"github.com/Mohamed-squared/lyceum-backend/internal/types"
 	"net/http"
 )
 

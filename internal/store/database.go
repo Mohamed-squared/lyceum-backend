@@ -3,7 +3,7 @@ package store
 
 import (
 	"context"
-	"github.com/Mohamed-squared/lyceum-backend/internal/api" // Assuming lyceum is the module name defined in go.mod
+	"github.com/Mohamed-squared/lyceum-backend/internal/types" // Assuming lyceum is the module name defined in go.mod
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -56,14 +56,14 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data Onboa
 	return err
 }
 
-func (s *Store) GetDashboardData(userID string) (*api.DashboardResponse, error) {
+func (s *Store) GetDashboardData(userID string) (*types.DashboardResponse, error) {
 	// In a future step, we will query the database using the userID.
 	// For now, return hardcoded mock data.
 
-	mockData := &api.DashboardResponse{
+	mockData := &types.DashboardResponse{
 		WelcomeMessage: "Welcome, Scholar!",
 		Credits:        "Scholar's Credits: 250",
-		TestGen: api.TestGenCardData{
+		TestGen: types.TestGenCardData{
 			Title:        "TestGen Snapshot",
 			Subject:      "Artin Abstract Algebra",
 			Chapters:     "12/15 Chapters Mastered",
@@ -71,28 +71,28 @@ func (s *Store) GetDashboardData(userID string) (*api.DashboardResponse, error) 
 			PendingExams: "2 Pending PDF Exams",
 			ButtonText:   "Go to TestGen Dashboard",
 		},
-		Courses: api.CoursesCardData{
+		Courses: types.CoursesCardData{
 			Title:            "Courses Snapshot",
 			EnrollmentStatus: "3 Courses Enrolled",
 			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics",
 			ButtonText:       "Go to My Courses",
 		},
-		Quote: api.QuoteCardData{
+		Quote: types.QuoteCardData{
 			Title:      "Quote of the Day",
 			Quote:      "The only true wisdom is in knowing you know nothing.",
 			Author:     "– Socrates",
 			ButtonText: "Refresh",
 		},
-		News: api.NewsCardData{
+		News: types.NewsCardData{
 			Title: "Lyceum News",
-			Items: []api.NewsItem{
+			Items: []types.NewsItem{
 				{Text: "New Course Released: Advanced Calculus", Time: "2 hours ago"},
 				{Text: "Community Event: Study Group this Friday", Time: "1 day ago"},
 			},
 		},
-		QuickLinks: api.QuickLinksCardData{
+		QuickLinks: types.QuickLinksCardData{
 			Title: "Quick Links",
-			Links: []api.QuickLinkItem{
+			Links: []types.QuickLinkItem{
 				{Text: "Generate Test", Icon: "/assets/icons/icon-test.svg"},
 				{Text: "Browse Courses", Icon: "/assets/icons/icon-courses.svg"},
 			},
