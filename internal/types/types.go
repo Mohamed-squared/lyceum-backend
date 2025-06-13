@@ -1,5 +1,5 @@
-// in internal/api/types.go
-package api
+// in internal/types/types.go
+package types // Changed from package api
 
 type DashboardResponse struct {
 	WelcomeMessage string            `json:"welcomeMessage"`
