@@ -66,6 +66,9 @@ func main() {
 
 	// API Routes
 	r.Route("/api/v1", func(r chi.Router) {
+		// Public dashboard route
+		r.Get("/dashboard", apiHandler.HandleGetDashboard) // Added this line
+
 		r.Group(func(r chi.Router) {
 			r.Use(auth.JWTMiddleware(cfg.SupabaseJWTSecret, cfg.SupabaseServiceKey))
 			r.Post("/onboarding", apiHandler.OnboardingHandler)

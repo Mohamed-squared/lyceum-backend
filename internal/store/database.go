@@ -3,6 +3,7 @@ package store
 
 import (
 	"context"
+	"github.com/Mohamed-squared/lyceum-backend/internal/api" // Assuming lyceum is the module name defined in go.mod
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -53,4 +54,50 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data Onboa
 		data.GithubURL, time.Now(),
 	)
 	return err
+}
+
+func (s *Store) GetDashboardData(userID string) (*api.DashboardResponse, error) {
+	// In a future step, we will query the database using the userID.
+	// For now, return hardcoded mock data.
+
+	mockData := &api.DashboardResponse{
+		WelcomeMessage: "Welcome, Scholar!",
+		Credits:        "Scholar's Credits: 250",
+		TestGen: api.TestGenCardData{
+			Title:        "TestGen Snapshot",
+			Subject:      "Artin Abstract Algebra",
+			Chapters:     "12/15 Chapters Mastered",
+			LastExam:     "Last Exam: 88%",
+			PendingExams: "2 Pending PDF Exams",
+			ButtonText:   "Go to TestGen Dashboard",
+		},
+		Courses: api.CoursesCardData{
+			Title:            "Courses Snapshot",
+			EnrollmentStatus: "3 Courses Enrolled",
+			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics",
+			ButtonText:       "Go to My Courses",
+		},
+		Quote: api.QuoteCardData{
+			Title:      "Quote of the Day",
+			Quote:      "The only true wisdom is in knowing you know nothing.",
+			Author:     "– Socrates",
+			ButtonText: "Refresh",
+		},
+		News: api.NewsCardData{
+			Title: "Lyceum News",
+			Items: []api.NewsItem{
+				{Text: "New Course Released: Advanced Calculus", Time: "2 hours ago"},
+				{Text: "Community Event: Study Group this Friday", Time: "1 day ago"},
+			},
+		},
+		QuickLinks: api.QuickLinksCardData{
+			Title: "Quick Links",
+			Links: []api.QuickLinkItem{
+				{Text: "Generate Test", Icon: "/assets/icons/icon-test.svg"},
+				{Text: "Browse Courses", Icon: "/assets/icons/icon-courses.svg"},
+			},
+		},
+	}
+
+	return mockData, nil
 }

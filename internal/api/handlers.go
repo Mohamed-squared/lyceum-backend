@@ -43,3 +43,18 @@ func (a *API) OnboardingHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Profile updated successfully"}`))
 }
+
+func (a *API) HandleGetDashboard(w http.ResponseWriter, r *http.Request) {
+	// In a future step, we will get the userID from the auth middleware.
+	// For now, we can use a placeholder ID.
+	userID := "placeholder_user_id" // Or retrieve from context if auth.UserIDKey is already set by a middleware for this path
+
+	dashboardData, err := a.store.GetDashboardData(userID) // Corrected: a.store instead of s.Store
+	if err != nil {
+		http.Error(w, "Failed to retrieve dashboard data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(dashboardData)
+}
