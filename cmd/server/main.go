@@ -55,8 +55,9 @@ func main() {
 
 	// Middleware
 	r.Use(middleware.Logger)
+	// Ensure CORS options match the issue's example EXACTLY
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://*.vercel.app"}, // Your Vercel domain
+		AllowedOrigins:   []string{"https://*.vercel.app", "http://localhost:3000"}, // FROM ISSUE
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -64,15 +65,17 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	authMiddleware := auth.AuthMiddleware(cfg.SupabaseJWTSecret) // Define it once
+
 	// API Routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public dashboard route
-		r.Get("/dashboard", apiHandler.HandleGetDashboard) // Added this line
+		r.Use(authMiddleware) // Apply to the whole group
 
-		r.Group(func(r chi.Router) {
-			r.Use(auth.AuthMiddleware(cfg.SupabaseJWTSecret))
-			r.Post("/onboarding", apiHandler.OnboardingHandler)
-		})
+		// Previously public dashboard route, now authenticated
+		r.Get("/dashboard", apiHandler.HandleGetDashboard)
+
+		// Previously in a sub-group, now directly under /api/v1 with auth
+		r.Post("/onboarding", apiHandler.OnboardingHandler)
 	})
 
 	// Start server
