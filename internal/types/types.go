@@ -53,3 +53,20 @@ type QuickLinksCardData struct {
 	Title string          `json:"title"`
 	Links []QuickLinkItem `json:"links"`
 }
+
+type OnboardingData struct {
+	DisplayName                      string   `json:"displayName"`
+	UserRole                         string   `json:"userRole"`
+	PreferredWebsiteLanguage         string   `json:"preferred_website_language"`
+	PreferredCourseExplanationLanguage string   `json:"preferred_course_explanation_language"`
+	PreferredCourseMaterialLanguage    string   `json:"preferred_course_material_language"`
+	Major                            string   `json:"major"`
+	MajorLevel                       string   `json:"major_level"`
+	StudiedSubjects                  []string `json:"studied_subjects"`
+	InterestedMajors                 []string `json:"interested_majors"`
+	Hobbies                          []string `json:"hobbies"`
+	SubscribedToNewsletter           bool     `json:"subscribed_to_newsletter"`
+	ReceiveQuotes                    bool     `json:"receive_quotes"`
+	Bio                              string   `json:"bio"`
+	GithubURL                        string   `json:"github_url"`
+}

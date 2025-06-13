@@ -24,7 +24,7 @@ func (a *API) OnboardingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data store.OnboardingData
+	var data types.OnboardingData
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
