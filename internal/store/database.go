@@ -3,7 +3,9 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"github.com/Mohamed-squared/lyceum-backend/internal/types" // Assuming lyceum is the module name defined in go.mod
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -38,41 +40,53 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types
 	return err
 }
 
-func (s *Store) GetDashboardData(userID string) (*types.DashboardResponse, error) {
-	// In a future step, we will query the database using the userID.
-	// For now, return hardcoded mock data.
+func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.DashboardResponse, error) {
+	var displayName, major, majorLevel string
+	var credits int // Assuming credits will be a number, default to 0 if not scanned
 
-	mockData := &types.DashboardResponse{
-		WelcomeMessage: "Welcome, Scholar!",
-		Credits:        "Scholar's Credits: 250",
+	// Query to fetch profile data including credits
+	query := `SELECT display_name, major, major_level, credits FROM profiles WHERE id = $1`
+	err := s.db.QueryRow(ctx, query, userID).Scan(&displayName, &major, &majorLevel, &credits)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("no profile found for user ID: %s", userID)
+		}
+		return nil, fmt.Errorf("database query failed: %w", err)
+	}
+
+	// Construct the response with a mix of dynamic and static data
+	responseData := &types.DashboardResponse{
+		WelcomeMessage: fmt.Sprintf("Welcome, %s!", displayName),
+		Credits:        fmt.Sprintf("Scholar's Credits: %d", credits),
 		TestGen: types.TestGenCardData{
 			Title:        "TestGen Snapshot",
-			Subject:      "Artin Abstract Algebra",
-			Chapters:     "12/15 Chapters Mastered",
-			LastExam:     "Last Exam: 88%",
-			PendingExams: "2 Pending PDF Exams",
+			Subject:      major, // Use the real major from the DB
+			Chapters:     "0/15 Chapters Mastered", // Static for now
+			LastExam:     "Last Exam: N/A", // Static for now
+			PendingExams: "0 Pending PDF Exams", // Static for now
 			ButtonText:   "Go to TestGen Dashboard",
 		},
-		Courses: types.CoursesCardData{
+		Courses: types.CoursesCardData{ // Static data from original file
 			Title:            "Courses Snapshot",
 			EnrollmentStatus: "3 Courses Enrolled",
 			TodaysFocus:      "Focus: Complete Chapter 3 of Quantum Mechanics",
 			ButtonText:       "Go to My Courses",
 		},
-		Quote: types.QuoteCardData{
+		Quote: types.QuoteCardData{ // Static data from original file
 			Title:      "Quote of the Day",
 			Quote:      "The only true wisdom is in knowing you know nothing.",
 			Author:     "– Socrates",
 			ButtonText: "Refresh",
 		},
-		News: types.NewsCardData{
+		News: types.NewsCardData{ // Static data from original file
 			Title: "Lyceum News",
 			Items: []types.NewsItem{
 				{Text: "New Course Released: Advanced Calculus", Time: "2 hours ago"},
 				{Text: "Community Event: Study Group this Friday", Time: "1 day ago"},
 			},
 		},
-		QuickLinks: types.QuickLinksCardData{
+		QuickLinks: types.QuickLinksCardData{ // Static data from original file
 			Title: "Quick Links",
 			Links: []types.QuickLinkItem{
 				{Text: "Generate Test", Icon: "/assets/icons/icon-test.svg"},
@@ -81,5 +95,5 @@ func (s *Store) GetDashboardData(userID string) (*types.DashboardResponse, error
 		},
 	}
 
-	return mockData, nil
+	return responseData, nil
 }

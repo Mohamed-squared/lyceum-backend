@@ -46,12 +46,16 @@ func (a *API) OnboardingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) HandleGetDashboard(w http.ResponseWriter, r *http.Request) {
-	// In a future step, we will get the userID from the auth middleware.
-	// For now, we can use a placeholder ID.
-	userID := "placeholder_user_id" // Or retrieve from context if auth.UserIDKey is already set by a middleware for this path
-
-	dashboardData, err := a.store.GetDashboardData(userID) // Corrected: a.store instead of s.Store
+	userID, err := auth.GetUserIDFromContext(r.Context())
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	dashboardData, err := a.store.GetDashboardData(r.Context(), userID)
+	if err != nil {
+		// Optional: Log the internal error for debugging
+		// log.Printf("Error getting dashboard data for user %s: %v", userID, err)
 		http.Error(w, "Failed to retrieve dashboard data", http.StatusInternalServerError)
 		return
 	}
