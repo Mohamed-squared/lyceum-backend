@@ -30,7 +30,7 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types
 			major = $7, major_level = $8, studied_subjects = $9, interested_majors = $10,
 			hobbies = $11, subscribed_to_newsletter = $12, receive_quotes = $13, bio = $14,
 			github_url = $15, has_completed_onboarding = TRUE, updated_at = $16
-		WHERE id = $1;
+		WHERE id = $1::uuid;
 	`
 	_, err := s.db.Exec(ctx, query,
 		userID, data.DisplayName, data.UserRole, data.PreferredWebsiteLanguage,

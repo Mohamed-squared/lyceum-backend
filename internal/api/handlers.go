@@ -38,6 +38,7 @@ func (a *API) OnboardingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.store.UpdateUserProfile(r.Context(), userID, data); err != nil {
+		log.Printf("!!! ONBOARDING ERROR: Failed to update profile for user %s: %v", userID, err)
 		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
 		return
 	}
