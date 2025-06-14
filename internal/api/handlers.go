@@ -19,30 +19,38 @@ func New(s *store.Store) *API {
 }
 
 func (a *API) OnboardingHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("--- DEBUG: OnboardingHandler started ---")
 	userID, ok := r.Context().Value(auth.UserIDKey).(string)
 	if !ok {
+		log.Println("!!! ONBOARDING ERROR: Could not retrieve user ID from context (ok is false)")
 		http.Error(w, "Could not retrieve user ID from context", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("--- DEBUG: Onboarding for User ID: %s", userID)
 
 	var data types.OnboardingData
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		log.Printf("!!! ONBOARDING ERROR: Failed to decode JSON body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	log.Printf("--- DEBUG: Decoded onboarding data: %+v", data)
 
 	// Basic validation
 	if data.DisplayName == "" {
+		log.Println("!!! ONBOARDING ERROR: Validation failed - Display name is empty.")
 		http.Error(w, "Display name is required", http.StatusBadRequest)
 		return
 	}
 
+	log.Println("--- DEBUG: Calling UpdateUserProfile in store...")
 	if err := a.store.UpdateUserProfile(r.Context(), userID, data); err != nil {
 		log.Printf("!!! ONBOARDING ERROR: Failed to update profile for user %s: %v", userID, err)
 		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("--- DEBUG: Onboarding successful, sending 200 OK")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Profile updated successfully"}`))
 }
