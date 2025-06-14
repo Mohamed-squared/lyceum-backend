@@ -9,6 +9,8 @@ type DashboardResponse struct {
 	Quote          QuoteCardData     `json:"quote"`
 	News           NewsCardData      `json:"news"`
 	QuickLinks     QuickLinksCardData `json:"quickLinks"`
+	ProfilePictureURL string `json:"profilePictureUrl"`
+	ProfileBannerURL  string `json:"profileBannerUrl"`
 }
 
 type TestGenCardData struct {
@@ -69,4 +71,6 @@ type OnboardingData struct {
 	ReceiveQuotes                    bool     `json:"receive_quotes"`
 	Bio                              string   `json:"bio"`
 	GithubURL                        string   `json:"github_url"`
+	ProfilePictureURL string `json:"profile_picture_url,omitempty"`
+	ProfileBannerURL  string `json:"profile_banner_url,omitempty"`
 }

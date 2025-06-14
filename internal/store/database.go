@@ -29,7 +29,8 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types
 			preferred_course_explanation_language = $5, preferred_course_material_language = $6,
 			major = $7, major_level = $8, studied_subjects = $9, interested_majors = $10,
 			hobbies = $11, subscribed_to_newsletter = $12, receive_quotes = $13, bio = $14,
-			github_url = $15, has_completed_onboarding = TRUE, updated_at = $16
+			github_url = $15, profile_picture_url = $16, profile_banner_url = $17,
+			has_completed_onboarding = TRUE, updated_at = $18
 		WHERE id = $1::uuid;
 	`
 	_, err := s.db.Exec(ctx, query,
@@ -37,18 +38,18 @@ func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types
 		data.PreferredCourseExplanationLanguage, data.PreferredCourseMaterialLanguage,
 		data.Major, data.MajorLevel, data.StudiedSubjects, data.InterestedMajors,
 		data.Hobbies, data.SubscribedToNewsletter, data.ReceiveQuotes, data.Bio,
-		data.GithubURL, time.Now(),
+		data.GithubURL, data.ProfilePictureURL, data.ProfileBannerURL, time.Now(),
 	)
 	return err
 }
 
 // GetDashboardData retrieves data needed for the dashboard
 func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.DashboardResponse, error) {
-	var displayName, major, majorLevel *string
+	var displayName, major, majorLevel, pfpURL, bannerURL *string
 	var credits int = 0
 
-	query := `SELECT display_name, major, major_level FROM profiles WHERE id = $1`
-	err := s.db.QueryRow(ctx, query, userID).Scan(&displayName, &major, &majorLevel)
+	query := `SELECT display_name, major, major_level, profile_picture_url, profile_banner_url FROM profiles WHERE id = $1`
+	err := s.db.QueryRow(ctx, query, userID).Scan(&displayName, &major, &majorLevel, &pfpURL, &bannerURL)
 
 	if err != nil && err != pgx.ErrNoRows {
 		return nil, fmt.Errorf("database query failed: %w", err)
@@ -64,9 +65,21 @@ func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.Das
 		safeMajor = *major
 	}
 
+	var safePfpURL = ""
+	if pfpURL != nil {
+		safePfpURL = *pfpURL
+	}
+
+	var safeBannerURL = ""
+	if bannerURL != nil {
+		safeBannerURL = *bannerURL
+	}
+
 	responseData := &types.DashboardResponse{
 		WelcomeMessage: fmt.Sprintf("Welcome, %s!", safeDisplayName),
 		Credits:        fmt.Sprintf("Scholar's Credits: %d", credits),
+		ProfilePictureURL: safePfpURL,
+		ProfileBannerURL:  safeBannerURL,
 		TestGen: types.TestGenCardData{
 			Title:        "TestGen Snapshot",
 			Subject:      safeMajor,
