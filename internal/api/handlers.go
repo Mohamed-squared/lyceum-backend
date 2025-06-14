@@ -53,6 +53,7 @@ func (a *API) HandleGetDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("--- DEBUG: Fetching dashboard data for User ID: %s", userID)
 	dashboardData, err := a.store.GetDashboardData(r.Context(), userID)
 	if err != nil {
 		// Optional: Log the internal error for debugging
