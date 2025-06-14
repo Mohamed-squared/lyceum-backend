@@ -20,25 +20,51 @@ func New(db *pgxpool.Pool) *Store {
 	return &Store{db: db}
 }
 
-// UpdateUserProfile updates a user's profile after onboarding
+// This is the new, correct version of UpdateUserProfile
 func (s *Store) UpdateUserProfile(ctx context.Context, userID string, data types.OnboardingData) error {
 	query := `
 		UPDATE public.profiles
 		SET
-			display_name = $2, user_role = $3, preferred_website_language = $4,
-			preferred_course_explanation_language = $5, preferred_course_material_language = $6,
-			major = $7, major_level = $8, studied_subjects = $9, interested_majors = $10,
-			hobbies = $11, subscribed_to_newsletter = $12, receive_quotes = $13, bio = $14,
-			github_url = $15, profile_picture_url = $16, profile_banner_url = $17,
-			has_completed_onboarding = TRUE, updated_at = $18
+			display_name = $2,
+			user_role = $3,
+			preferred_website_language = $4,
+			preferred_course_explanation_language = $5,
+			preferred_course_material_language = $6,
+			major = $7,
+			major_level = $8,
+			studied_subjects = $9,
+			interested_majors = $10,
+			hobbies = $11,
+			subscribed_to_newsletter = $12,
+			receive_quotes = $13,
+			bio = $14,
+			github_url = $15,
+			has_completed_onboarding = $16,
+			updated_at = $17,
+			profile_picture_url = $18,
+			profile_banner_url = $19
 		WHERE id = $1::uuid;
 	`
 	_, err := s.db.Exec(ctx, query,
-		userID, data.DisplayName, data.UserRole, data.PreferredWebsiteLanguage,
-		data.PreferredCourseExplanationLanguage, data.PreferredCourseMaterialLanguage,
-		data.Major, data.MajorLevel, data.StudiedSubjects, data.InterestedMajors,
-		data.Hobbies, data.SubscribedToNewsletter, data.ReceiveQuotes, data.Bio,
-		data.GithubURL, data.ProfilePictureURL, data.ProfileBannerURL, time.Now(),
+		userID,                       // $1
+		data.DisplayName,             // $2
+		data.UserRole,                // $3
+		data.PreferredWebsiteLanguage, // $4
+		data.PreferredCourseExplanationLanguage, // $5
+		data.PreferredCourseMaterialLanguage,    // $6
+		data.Major,                   // $7
+		data.MajorLevel,              // $8
+		data.StudiedSubjects,         // $9
+		data.InterestedMajors,        // $10
+		data.Hobbies,                 // $11
+		data.SubscribedToNewsletter,  // $12
+		data.ReceiveQuotes,           // $13
+		data.Bio,                     // $14
+		data.GithubURL,               // $15
+		true,                         // $16 (for has_completed_onboarding)
+		time.Now(),                   // $17 (for updated_at)
+		data.ProfilePictureURL,       // $18
+		data.ProfileBannerURL,        // $19
 	)
 	return err
 }
