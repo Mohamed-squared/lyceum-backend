@@ -73,6 +73,9 @@ func main() {
 	// authMiddleware instance
 	authMiddleware := auth.AuthMiddleware(cfg.SupabaseJWTSecret)
 
+	// Public routes that do not require authentication
+	router.Get("/api/v1/health", apiHandler.HealthCheckHandler)
+
 	// Apply AuthMiddleware to a group of routes
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Use(authMiddleware) // Apply AuthMiddleware to all /api/v1 routes
