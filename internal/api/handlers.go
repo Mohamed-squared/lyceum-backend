@@ -74,3 +74,32 @@ func (a *API) HandleGetDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(dashboardData)
 }
+
+// HealthCheckHandler checks the status of the service and its database connection.
+func (a *API) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	// Check database connection by calling the new Ping method
+	dbStatus := "ok"
+	if err := a.store.Ping(r.Context()); err != nil {
+		log.Printf("!!! HEALTH CHECK ERROR: Database ping failed: %v", err)
+		dbStatus = "error"
+	}
+
+	// Prepare the response data
+	response := map[string]string{
+		"status":   "ok",
+		"database": dbStatus,
+	}
+
+	// As per /docs/api_contract.md, we wrap our response.
+	wrappedResponse := map[string]interface{}{
+		"success": true,
+		"data":    response,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if dbStatus == "error" {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+
+	json.NewEncoder(w).Encode(wrappedResponse)
+}

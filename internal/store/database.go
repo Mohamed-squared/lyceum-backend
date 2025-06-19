@@ -144,3 +144,8 @@ func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.Das
 
 	return responseData, nil
 }
+
+// Ping checks the database connection.
+func (s *Store) Ping(ctx context.Context) error {
+	return s.db.Ping(ctx)
+}
