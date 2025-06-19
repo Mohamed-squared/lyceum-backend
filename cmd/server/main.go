@@ -83,6 +83,7 @@ func main() {
 		// Your authenticated routes go here
 		r.Post("/onboarding", apiHandler.OnboardingHandler)
 		r.Get("/dashboard", apiHandler.HandleGetDashboard) // Now also protected by authMiddleware
+		r.Post("/courses", apiHandler.CreateCourseHandler)
 	})
 
 	// Start server

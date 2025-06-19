@@ -149,3 +149,49 @@ func (s *Store) GetDashboardData(ctx context.Context, userID string) (*types.Das
 func (s *Store) Ping(ctx context.Context) error {
 	return s.db.Ping(ctx)
 }
+
+// CreateCourse inserts a new course and enrolls the creator as an instructor.
+func (s *Store) CreateCourse(ctx context.Context, creatorID string, data types.CreateCourseRequest) (*types.CourseResponse, error) {
+	// Start a new transaction
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could not begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx) // Rollback in case of any error
+
+	// 1. Insert into the 'courses' table
+	courseQuery := `
+		INSERT INTO public.courses (creator_id, title, description, visibility)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, creator_id, title, description, visibility, created_at;
+	`
+	var course types.CourseResponse
+	err = tx.QueryRow(ctx, courseQuery, creatorID, data.Title, data.Description, data.Visibility).Scan(
+		&course.ID,
+		&course.CreatorID,
+		&course.Title,
+		&course.Description,
+		&course.Visibility,
+		&course.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not insert course: %w", err)
+	}
+
+	// 2. Insert into the 'enrollments' table
+	enrollmentQuery := `
+		INSERT INTO public.enrollments (user_id, course_id, role)
+		VALUES ($1, $2, 'instructor');
+	`
+	_, err = tx.Exec(ctx, enrollmentQuery, creatorID, course.ID)
+	if err != nil {
+		return nil, fmt.Errorf("could not enroll creator in course: %w", err)
+	}
+
+	// 3. Commit the transaction
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("could not commit transaction: %w", err)
+	}
+
+	return &course, nil
+}

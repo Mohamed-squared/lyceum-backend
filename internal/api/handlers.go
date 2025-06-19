@@ -103,3 +103,43 @@ func (a *API) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(wrappedResponse)
 }
+
+// CreateCourseHandler handles the creation of a new course.
+func (a *API) CreateCourseHandler(w http.ResponseWriter, r *http.Request) {
+	// Get creator's user ID from the authenticated context
+	creatorID, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// Decode the request body
+	var req types.CreateCourseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the input
+	if req.Title == "" {
+		http.Error(w, "Title is required", http.StatusBadRequest)
+		return
+	}
+	if req.Visibility != "public" && req.Visibility != "private" {
+		http.Error(w, "Visibility must be 'public' or 'private'", http.StatusBadRequest)
+		return
+	}
+
+	// Call the store to create the course
+	newCourse, err := a.store.CreateCourse(r.Context(), creatorID, req)
+	if err != nil {
+		log.Printf("!!! COURSE CREATION ERROR: %v", err)
+		http.Error(w, "Failed to create course", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated) // 201 Created
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": newCourse})
+}
