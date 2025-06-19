@@ -195,3 +195,39 @@ func (s *Store) CreateCourse(ctx context.Context, creatorID string, data types.C
 
 	return &course, nil
 }
+
+// GetCoursesByUserID retrieves all courses a user is enrolled in.
+func (s *Store) GetCoursesByUserID(ctx context.Context, userID string) ([]types.CourseResponse, error) {
+	query := `
+		SELECT c.id, c.creator_id, c.title, c.description, c.visibility, c.created_at
+		FROM public.courses c
+		JOIN public.enrollments e ON c.id = e.course_id
+		WHERE e.user_id = $1
+		ORDER BY c.created_at DESC;
+	`
+	rows, err := s.db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("could not query courses: %w", err)
+	}
+	defer rows.Close()
+
+	var courses []types.CourseResponse
+	for rows.Next() {
+		var course types.CourseResponse
+		if err := rows.Scan(&course.ID, &course.CreatorID, &course.Title, &course.Description, &course.Visibility, &course.CreatedAt); err != nil {
+			return nil, fmt.Errorf("could not scan course row: %w", err)
+		}
+		courses = append(courses, course)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during rows iteration: %w", err)
+	}
+
+	// It's not an error to have no courses, so we return an empty slice.
+	if courses == nil {
+		courses = []types.CourseResponse{}
+	}
+
+	return courses, nil
+}

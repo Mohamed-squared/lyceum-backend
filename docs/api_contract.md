@@ -50,5 +50,5 @@ For list results, `data` will be an array. For single results, it will be an obj
 
 ### Courses
 - **`POST /api/v1/courses`**: Create a new course.
-- **`GET /api/v1/courses`**: Get a list of courses.
+- **`GET /api/v1/courses`**: Get a list of courses for the authenticated user.
 - **`GET /api/v1/courses/{courseId}`**: Get details for a specific course.

@@ -84,6 +84,7 @@ func main() {
 		r.Post("/onboarding", apiHandler.OnboardingHandler)
 		r.Get("/dashboard", apiHandler.HandleGetDashboard) // Now also protected by authMiddleware
 		r.Post("/courses", apiHandler.CreateCourseHandler)
+		r.Get("/courses", apiHandler.GetUserCoursesHandler)
 	})
 
 	// Start server

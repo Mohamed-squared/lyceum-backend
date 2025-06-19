@@ -143,3 +143,24 @@ func (a *API) CreateCourseHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated) // 201 Created
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": newCourse})
 }
+
+// GetUserCoursesHandler handles retrieving courses for the authenticated user.
+func (a *API) GetUserCoursesHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	courses, err := a.store.GetCoursesByUserID(r.Context(), userID)
+	if err != nil {
+		log.Printf("!!! GET USER COURSES ERROR: %v", err)
+		http.Error(w, "Failed to retrieve courses", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "data": courses})
+}
