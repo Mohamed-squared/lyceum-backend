@@ -1,6 +1,8 @@
 // in internal/types/types.go
 package types // Changed from package api
 
+import "time"
+
 type DashboardResponse struct {
 	WelcomeMessage string            `json:"welcomeMessage"`
 	Credits        string            `json:"credits"`
@@ -73,4 +75,21 @@ type OnboardingData struct {
 	GithubURL                        string   `json:"github_url"`
 	ProfilePictureURL string `json:"profile_picture_url,omitempty"`
 	ProfileBannerURL  string `json:"profile_banner_url,omitempty"`
+}
+
+// CreateCourseRequest defines the payload for creating a new course.
+type CreateCourseRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+}
+
+// CourseResponse defines the data returned after creating or fetching a course.
+type CourseResponse struct {
+	ID          string    `json:"id"`
+	CreatorID   string    `json:"creatorId"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Visibility  string    `json:"visibility"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
